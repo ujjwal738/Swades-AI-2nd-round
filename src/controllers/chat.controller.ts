@@ -8,19 +8,20 @@ export const chatController = {
     const conversationId = body?.conversationId
     const content = body?.message
 
-    if (typeof conversationId !== 'string' || conversationId.length === 0) {
-      throw new HTTPException(400, { message: 'conversationId is required' })
+    if (conversationId != null && typeof conversationId !== 'string') {
+      throw new HTTPException(400, { message: 'conversationId must be a string' })
     }
     if (typeof content !== 'string' || content.trim().length === 0) {
       throw new HTTPException(400, { message: 'message is required' })
     }
 
     const result = await chatService.createMessageAndRespond({
-      conversationId,
+      conversationId: typeof conversationId === 'string' ? conversationId : undefined,
       content: content.trim(),
     })
 
     return c.json({
+      conversationId: result.conversationId,
       response: result.response,
       userMessage: result.userMessage,
       agentMessage: result.agentMessage,

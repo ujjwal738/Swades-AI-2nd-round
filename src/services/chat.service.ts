@@ -4,31 +4,56 @@ import { prisma } from '../db/prisma.js'
 import { routerAgent } from '../agents/router.agent.js'
 
 type CreateMessageInput = {
-  conversationId: string
+  conversationId?: string
   content: string
 }
 
 export const chatService = {
   async createMessageAndRespond(input: CreateMessageInput) {
-    const conversation = await prisma.conversation.findUnique({
-      where: { id: input.conversationId },
-      select: { id: true },
-    })
+    let conversationId = input.conversationId?.trim()
+    if (!conversationId) {
+      const user = await prisma.user.create({ data: {} })
+      const conversation = await prisma.conversation.create({
+        data: { userId: user.id },
+        select: { id: true },
+      })
+      conversationId = conversation.id
 
-    if (!conversation) {
-      throw new HTTPException(404, { message: 'Conversation not found' })
+      await prisma.order.createMany({
+        data: [
+          { status: 'pending', trackingId: `TRACK-${conversationId.slice(-4)}-001` },
+          { status: 'shipped', trackingId: `TRACK-${conversationId.slice(-4)}-002` },
+        ],
+        skipDuplicates: true,
+      })
+
+      await prisma.payment.createMany({
+        data: [
+          { status: 'paid', refundStatus: 'none' },
+          { status: 'failed', refundStatus: 'none' },
+        ],
+      })
+    } else {
+      const conversation = await prisma.conversation.findUnique({
+        where: { id: conversationId },
+        select: { id: true },
+      })
+
+      if (!conversation) {
+        throw new HTTPException(404, { message: 'Conversation not found' })
+      }
     }
 
     const userMessage = await prisma.message.create({
       data: {
         role: 'user',
         content: input.content,
-        conversationId: input.conversationId,
+        conversationId,
       },
     })
 
     const agentText = await routerAgent({
-      conversationId: input.conversationId,
+      conversationId,
       message: input.content,
     })
 
@@ -36,11 +61,11 @@ export const chatService = {
       data: {
         role: 'agent',
         content: agentText,
-        conversationId: input.conversationId,
+        conversationId,
       },
     })
 
-    return { userMessage, agentMessage, response: agentText }
+    return { conversationId, userMessage, agentMessage, response: agentText }
   },
 
   async getConversation(conversationId: string) {

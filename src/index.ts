@@ -1,3 +1,5 @@
+import dotenv from 'dotenv'
+
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 
@@ -5,6 +7,11 @@ import { errorMiddleware } from './middleware/error.js'
 import { agentsRoute } from './routes/agents.js'
 import { chatRoute } from './routes/chat.js'
 import { healthRoute } from './routes/health.js'
+
+dotenv.config()
+if (!process.env.DATABASE_URL) {
+  dotenv.config({ path: '.env.example' })
+}
 
 const app = new Hono()
 

@@ -19,8 +19,8 @@ export function App() {
   }, [conversationId])
 
   const canSend = useMemo(() => {
-    return conversationId.trim().length > 0 && input.trim().length > 0 && !typing
-  }, [conversationId, input, typing])
+    return input.trim().length > 0 && !typing
+  }, [input, typing])
 
   async function onSend() {
     if (!canSend) return
@@ -34,7 +34,10 @@ export function App() {
       const res = await fetch('/api/chat/messages', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ conversationId: conversationId.trim(), message: text }),
+        body: JSON.stringify({
+          conversationId: conversationId.trim().length > 0 ? conversationId.trim() : undefined,
+          message: text,
+        }),
       })
 
       const data = (await res.json().catch(() => null)) as any
@@ -45,6 +48,9 @@ export function App() {
       }
 
       const reply = typeof data?.response === 'string' ? data.response : '(no response)'
+      if (typeof data?.conversationId === 'string' && data.conversationId.length > 0) {
+        setConversationId(data.conversationId)
+      }
       setMessages((prev) => [...prev, { role: 'agent', content: reply }])
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Network error'
@@ -62,7 +68,7 @@ export function App() {
         <input
           value={conversationId}
           onChange={(e) => setConversationId(e.target.value)}
-          placeholder="conversationId (required)"
+          placeholder="conversationId (auto-created if empty)"
           style={{ flex: 1, padding: 8 }}
         />
       </div>
