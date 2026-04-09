@@ -1,0 +1,26 @@
+{
+  "name": "hono-prisma-backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^3.0.52",
+    "@hono/node-server": "^1.19.4",
+    "@prisma/client": "^6.16.1",
+    "ai": "^6.0.154",
+    "hono": "^4.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.2",
+    "prisma": "^6.16.1",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}

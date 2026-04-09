@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MessageRole {
+  user
+  agent
+}
+
+enum OrderStatus {
+  pending
+  shipped
+  delivered
+  cancelled
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+}
+
+enum RefundStatus {
+  none
+  requested
+  refunded
+}
+
+model User {
+  id            String         @id @default(cuid())
+  createdAt     DateTime       @default(now())
+  conversations Conversation[]
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  userId    String
+  createdAt DateTime  @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@index([userId])
+}
+
+model Message {
+  id             String      @id @default(cuid())
+  role           MessageRole
+  content        String
+  conversationId String
+  createdAt      DateTime    @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+}
+
+model Order {
+  id         String      @id @default(cuid())
+  status     OrderStatus
+  trackingId String      @unique
+  createdAt  DateTime    @default(now())
+}
+
+model Payment {
+  id           String        @id @default(cuid())
+  status       PaymentStatus
+  refundStatus RefundStatus
+  createdAt    DateTime      @default(now())
+}
+
